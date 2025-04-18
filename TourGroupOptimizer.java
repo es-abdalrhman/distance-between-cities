@@ -2,10 +2,10 @@
 import java.util.*;
 
 public class TourGroupOptimizer {
-
+    // TODO: need to deal with this if the number of elements not divisible by the elements of the group 
     static final int NUM_PLACES = 40;
     static final int GROUP_SIZE = 5;
-    static final int NUM_GROUPS = NUM_PLACES / GROUP_SIZE;
+    static final int NUM_GROUPS =( NUM_PLACES % GROUP_SIZE == 0 )?NUM_PLACES / GROUP_SIZE : NUM_PLACES / GROUP_SIZE+1 ; // this result in outofBound exception
 
     public static List<List<Integer>> randomInitialGroups(Random rand) {
         List<Integer> allPlaces = new ArrayList<>();
@@ -18,7 +18,7 @@ public class TourGroupOptimizer {
         }
         return groups;
     }
-    // this is the first case I found out that this solution isn't true as it sums all the distances while the real case is to get squential distances 
+    
     public static double intraGroupDistance(List<Integer> group, double[][] dist) {
     if (group.size() <= 1) return 0;
     
@@ -117,7 +117,7 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
             }
         }
 
-        System.out.println("Best Total Intra-Group Distance: " + bestScore);
+        // System.out.println("Best Total Intra-Group Distance: " + bestScore);
         return bestGroups;
     }
 
@@ -127,25 +127,75 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
         }
     }
 
-    public static void main(String[] args) {
-        // === Test Case ===
-        // Generate dummy symmetrical matrix for testing
-        double[][] dist = new double[NUM_PLACES][NUM_PLACES];
-        Random rand = new Random(30);
+    // public static void main(String[] args) {
+    //     // === Test Case ===
+    //     // Generate dummy symmetrical matrix for testing
+    //     double[][] dist = new double[NUM_PLACES][NUM_PLACES];
+    //     Random rand = new Random(30);
 
-        for (int i = 0; i < NUM_PLACES; i++) {
-            for (int j = 0; j <= i; j++) {
-                if (i == j) dist[i][j] = 0;
-                else {
-                    double d = rand.nextDouble() * 100;
-                    dist[i][j] = d;
-                    dist[j][i] = d;
-                    // System.out.println(dist[i][j]);
-                }
+    //     for (int i = 0; i < NUM_PLACES; i++) {
+    //         for (int j = 0; j <= i; j++) {
+    //             if (i == j) dist[i][j] = 0;
+    //             else {
+    //                 double d = rand.nextDouble() * 100;
+    //                 dist[i][j] = d;
+    //                 dist[j][i] = d;
+    //                 // System.out.println(dist[i][j]);
+    //             }
+    //         }
+    //     }
+
+    //     List<List<Integer>> bestGroups = optimize(dist, 5000, rand);
+    //     printGroups(bestGroups);
+    // }
+    public static void main(String[] args) {
+    // Generate distance matrix
+    double[][] dist = new double[NUM_PLACES][NUM_PLACES];
+    Random baseRand = new Random(42); // Fixed seed for consistent distance matrix
+    
+    // Initialize distance matrix
+    for (int i = 0; i < NUM_PLACES; i++) {
+        for (int j = 0; j <= i; j++) {
+            if (i == j) {
+                dist[i][j] = 0;
+            } else {
+                double d = baseRand.nextDouble() * 100;
+                dist[i][j] = d;
+                dist[j][i] = d;
             }
         }
-
-        List<List<Integer>> bestGroups = optimize(dist, 5000, rand);
-        printGroups(bestGroups);
     }
+
+    // Parameters for multi-start optimization
+    final int NUM_SEEDS = 960;       // Number of different seeds to try
+    final int ITERATIONS = 1000;    // Iterations per optimization run
+    
+    // Track best overall solution
+    double globalBestScore = Double.MAX_VALUE;
+    List<List<Integer>> globalBestGroups = null;
+    int bestSeed = -1;
+
+    // Test multiple random seeds
+    for (int seed = 920; seed < NUM_SEEDS; seed++) {
+        Random groupRand = new Random(seed);
+        // System.out.println("\nRunning optimization with seed: " + seed);
+        
+        List<List<Integer>> currentGroups = optimize(dist, ITERATIONS, groupRand);
+        double currentScore = totalDistance(currentGroups, dist);
+        
+        if (currentScore < globalBestScore) {
+            globalBestScore = currentScore;
+            globalBestGroups = deepCopyGroups(currentGroups);
+            bestSeed = seed;
+            // System.out.println("New best score found: " + globalBestScore);
+        }
+    }
+
+    // Output final results
+    System.out.println("\n=== FINAL RESULTS ===");
+    System.out.println("Best seed: " + bestSeed);
+    System.out.println("Best total distance: " + globalBestScore);
+    System.out.println("Optimal groups:");
+    printGroups(globalBestGroups);
+}
 }
