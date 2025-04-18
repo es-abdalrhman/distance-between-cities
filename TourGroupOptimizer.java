@@ -20,14 +20,57 @@ public class TourGroupOptimizer {
     }
     // this is the first case I found out that this solution isn't true as it sums all the distances while the real case is to get squential distances 
     public static double intraGroupDistance(List<Integer> group, double[][] dist) {
-        double sum = 0;
-        for (int i = 0; i < group.size(); i++) {
-            for (int j = i + 1; j < group.size(); j++) {
-                sum += dist[group.get(i)][group.get(j)];
-            }
+    if (group.size() <= 1) return 0;
+    
+    List<List<Integer>> permutations = generatePermutations(group);
+    double minDistance = Double.MAX_VALUE;
+    List<Integer> bestPath = null;
+    
+    for (List<Integer> path : permutations) {
+        double pathDistance = 0;
+        // Calculate distance for this permutation
+        for (int i = 0; i < path.size() - 1; i++) {
+            pathDistance += dist[path.get(i)][path.get(i+1)];
         }
-        return sum;
+        // Complete the loop
+        pathDistance += dist[path.get(path.size()-1)][path.get(0)];
+        
+        if (pathDistance < minDistance) {
+            minDistance = pathDistance;
+            bestPath = path;
+        }
     }
+    
+    // Modify the original group to match the best path order
+    if (bestPath != null) {
+        group.clear();
+        group.addAll(bestPath);
+    }
+    
+    return minDistance;
+}
+
+// The generatePermutations method remains exactly the same
+private static List<List<Integer>> generatePermutations(List<Integer> original) {
+    if (original.isEmpty()) {
+        List<List<Integer>> result = new ArrayList<>();
+        result.add(new ArrayList<>());
+        return result;
+    }
+    
+    Integer first = original.get(0);
+    List<Integer> rest = original.subList(1, original.size());
+    
+    List<List<Integer>> permutations = new ArrayList<>();
+    for (List<Integer> p : generatePermutations(rest)) {
+        for (int i = 0; i <= p.size(); i++) {
+            List<Integer> newPerm = new ArrayList<>(p);
+            newPerm.add(i, first);
+            permutations.add(newPerm);
+        }
+    }
+    return permutations;
+}
 
     public static double totalDistance(List<List<Integer>> groups, double[][] dist) {
         double sum = 0;
