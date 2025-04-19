@@ -72,13 +72,13 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
     return permutations;
 }
 
-    // public static double totalDistance(List<List<Integer>> groups, double[][] dist) {
-    //     double sum = 0;
-    //     for (List<Integer> group : groups) {
-    //         sum += intraGroupDistance(group, dist);
-    //     }
-    //     return sum;
-    // }
+    public static double totalDistance(List<List<Integer>> groups, double[][] dist) {
+        double sum = 0;
+        for (List<Integer> group : groups) {
+            sum += intraGroupDistance(group, dist);
+        }
+        return sum;
+    }
 
     public static List<List<Integer>> deepCopyGroups(List<List<Integer>> groups) {
         List<List<Integer>> copy = new ArrayList<>();
