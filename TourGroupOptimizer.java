@@ -72,13 +72,13 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
     return permutations;
 }
 
-    public static double totalDistance(List<List<Integer>> groups, double[][] dist) {
-        double sum = 0;
-        for (List<Integer> group : groups) {
-            sum += intraGroupDistance(group, dist);
-        }
-        return sum;
-    }
+    // public static double totalDistance(List<List<Integer>> groups, double[][] dist) {
+    //     double sum = 0;
+    //     for (List<Integer> group : groups) {
+    //         sum += intraGroupDistance(group, dist);
+    //     }
+    //     return sum;
+    // }
 
     public static List<List<Integer>> deepCopyGroups(List<List<Integer>> groups) {
         List<List<Integer>> copy = new ArrayList<>();
@@ -90,7 +90,13 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
 
     public static List<List<Integer>> optimize(double[][] dist, int iterations, Random rand) {
         List<List<Integer>> groups = randomInitialGroups(rand);
-        double bestScore = totalDistance(groups, dist);
+        // Precompute all group distances
+        double[] groupDistances = new double[NUM_GROUPS];
+        for (int i = 0; i < NUM_GROUPS; i++) {
+            groupDistances[i] = intraGroupDistance(groups.get(i), dist);
+        }
+        
+        double bestScore = Arrays.stream(groupDistances).sum();
         List<List<Integer>> bestGroups = deepCopyGroups(groups);
 
         // Random rand = new Random();
@@ -100,8 +106,8 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
             int g2 = rand.nextInt(NUM_GROUPS);
             while (g2 == g1) g2 = rand.nextInt(NUM_GROUPS);
 
-            int i1 = rand.nextInt(GROUP_SIZE);
-            int i2 = rand.nextInt(GROUP_SIZE);
+            int i1 = rand.nextInt(groups.get(g1).size());
+            int i2 = rand.nextInt(groups.get(g2).size());
 
             // Swap
             List<List<Integer>> newGroups = deepCopyGroups(groups);
@@ -109,15 +115,25 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
             newGroups.get(g1).set(i1, newGroups.get(g2).get(i2));
             newGroups.get(g2).set(i2, temp);
 
-            double newScore = totalDistance(newGroups, dist);
+           // Only recompute distances for the two modified groups
+            double oldDistSum = groupDistances[g1] + groupDistances[g2];
+            
+            // Calculate new distances for modified groups
+            double newDist1 = intraGroupDistance(newGroups.get(g1), dist);
+            double newDist2 = intraGroupDistance(newGroups.get(g2), dist);
+            double newDistSum = newDist1 + newDist2;
+            
+            double newScore = bestScore - oldDistSum + newDistSum;
             if (newScore < bestScore) {
                 groups = newGroups;
+                groupDistances[g1] = newDist1;
+                groupDistances[g2] = newDist2;
                 bestScore = newScore;
                 bestGroups = deepCopyGroups(newGroups);
             }
         }
 
-        // System.out.println("Best Total Intra-Group Distance: " + bestScore);
+        System.out.println("Best Total Intra-Group Distance: " + bestScore);
         return bestGroups;
     }
 
@@ -131,7 +147,7 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
     //     // === Test Case ===
     //     // Generate dummy symmetrical matrix for testing
     //     double[][] dist = new double[NUM_PLACES][NUM_PLACES];
-    //     Random rand = new Random(30);
+    //     Random rand = new Random(42);
 
     //     for (int i = 0; i < NUM_PLACES; i++) {
     //         for (int j = 0; j <= i; j++) {
@@ -167,7 +183,7 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
     }
 
     // Parameters for multi-start optimization
-    final int NUM_SEEDS = 960;       // Number of different seeds to try
+    final int NUM_SEEDS = 1000;       // Number of different seeds to try
     final int ITERATIONS = 1000;    // Iterations per optimization run
     
     // Track best overall solution
@@ -176,7 +192,7 @@ private static List<List<Integer>> generatePermutations(List<Integer> original) 
     int bestSeed = -1;
 
     // Test multiple random seeds
-    for (int seed = 920; seed < NUM_SEEDS; seed++) {
+    for (int seed = 1; seed < NUM_SEEDS; seed++) {
         Random groupRand = new Random(seed);
         // System.out.println("\nRunning optimization with seed: " + seed);
         
